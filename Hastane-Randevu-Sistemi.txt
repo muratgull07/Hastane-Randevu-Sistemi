@@ -1,0 +1,191 @@
+import sys
+import random
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QTabWidget, QComboBox, QTextEdit
+from PyQt5.QtCore import Qt, QRegExp
+from PyQt5.QtGui import QRegExpValidator
+
+class GirisEkrani(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Giriş Ekranı")
+        self.resize(300, 150)
+
+        self.isim_label = QLabel("İsim:")
+        self.isim_input = QLineEdit()
+        self.isim_validator = QRegExpValidator(QRegExp("[a-zA-Z\\s]+"))
+        self.isim_input.setValidator(self.isim_validator)
+
+        self.tc_label = QLabel("TC:")
+        self.tc_input = QLineEdit()
+        self.tc_validator = QRegExpValidator(QRegExp("[0-9]+"))
+        self.tc_input.setValidator(self.tc_validator)
+        self.tc_input.setMaxLength(11)
+
+        self.giris_buton = QPushButton("Giriş Yap")
+        self.giris_buton.setStyleSheet("background-color: white;")  # Buton arka plan rengini beyaz yap
+        self.giris_buton.clicked.connect(self.arayuz_ekranini_ac)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.isim_label)
+        layout.addWidget(self.isim_input)
+        layout.addWidget(self.tc_label)
+        layout.addWidget(self.tc_input)
+        layout.addWidget(self.giris_buton)
+        self.setLayout(layout)
+
+    def arayuz_ekranini_ac(self):
+        isim = self.isim_input.text().strip()
+        tc = self.tc_input.text().strip()
+
+        if not isim or not tc:
+            QMessageBox.warning(self, "Uyarı", "Lütfen tüm alanları doldurun.")
+            return
+
+        if len(tc) != 11 or not tc.isdigit():
+            QMessageBox.warning(self, "Uyarı", "TC kimlik numarası 11 rakamdan oluşmalıdır.")
+            return
+
+        self.arayuz_ekrani = AnaEkran(isim, tc)
+        self.arayuz_ekrani.setStyleSheet("background-color: lightblue;")  # Ana ekran arka plan rengini açık mavi yap
+        self.arayuz_ekrani.show()
+        self.hide()
+
+class RandevuEkrani(QWidget):
+    def __init__(self, ana_ekran):
+        super().__init__()
+        self.ana_ekran = ana_ekran
+
+        self.doktorlar = [
+            {"ad": "Ahmet", "soyad": "Orhan", "uzmanlik": "Dermatolog", "musaitlik": "Müsait"},
+            {"ad": "Gizem", "soyad": "Demirtaş", "uzmanlik": "Çocuk uzmanı", "musaitlik": "Müsait"},
+            {"ad": "Ferhat", "soyad": "Kobfa", "uzmanlik": "Diş sağlığı", "musaitlik": "Müsait Değil"},
+            {"ad": "Derya", "soyad": "Çavuşoğlu", "uzmanlik": "Kadın Doğum", "musaitlik": "Müsait Değil"}
+        ]
+
+        self.secim_kutusu = QComboBox()
+
+        for doktor in self.doktorlar:
+            self.secim_kutusu.addItem(f"{doktor['ad']} {doktor['soyad']}")
+
+        self.randevu_al_buton = QPushButton("Randevu Al")
+        self.randevu_al_buton.setStyleSheet("background-color: white;")  # Buton arka plan rengini beyaz yap
+        self.randevu_al_buton.clicked.connect(self.randevu_al)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.secim_kutusu)
+        layout.addWidget(self.randevu_al_buton)
+        self.setLayout(layout)
+
+        self.secilen_doktor = None
+
+    def randevu_al(self):
+        selected_doctor = self.secim_kutusu.currentText()
+
+        for doktor in self.doktorlar:
+            if f"{doktor['ad']} {doktor['soyad']}" == selected_doctor:
+                if doktor["musaitlik"] == "Müsait":
+                    saat = random.randint(12, 18)
+                    randevu_mesaji = f"{doktor['ad']} {doktor['soyad']} ile saat {saat}:00 için randevunuz oluşturulmuştur."
+                    QMessageBox.information(self, "Randevu Alındı", randevu_mesaji)
+                    self.ana_ekran.ekle_randevu_gecmisi(f"{doktor['ad']} {doktor['soyad']}", f"{saat}:00")
+                else:
+                    QMessageBox.warning(self, "Uyarı", "Seçilen doktor müsait değil.")
+                return
+
+class DoktorSorgulaEkrani(QWidget):
+    def __init__(self, ana_ekran):
+        super().__init__()
+        self.ana_ekran = ana_ekran
+
+        self.doktor_adi_label = QLabel("Doktor Adını eksiksiz Bir şekilde yazınız")
+        self.doktor_adi_input = QLineEdit()
+        self.doktor_adi_input.setPlaceholderText("Doktor adını girin...")
+
+        self.sorgula_buton = QPushButton("Sorgula")
+        self.sorgula_buton.setStyleSheet("background-color: white;")  # Buton arka plan rengini beyaz yap
+        self.sorgula_buton.clicked.connect(self.sorgula)
+
+        self.red_rectangle = QLabel(self)
+        self.red_rectangle.setStyleSheet("background-color: red; color: white; padding: 10px;")
+        self.red_rectangle.setAlignment(Qt.AlignCenter)
+        self.red_rectangle.setVisible(False)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.doktor_adi_label)
+        layout.addWidget(self.doktor_adi_input)
+        layout.addWidget(self.sorgula_buton)
+        layout.addWidget(self.red_rectangle)
+        self.setLayout(layout)
+
+    def sorgula(self):
+        doktor_adi = self.doktor_adi_input.text().strip()
+
+        for doktor in self.ana_ekran.randevu_al_sekmesi.doktorlar:
+            if f"{doktor['ad']} {doktor['soyad']}" == doktor_adi:
+                bilgi_mesaji = f"Ad: {doktor['ad']} {doktor['soyad']}\nUzmanlık Alanı: {doktor['uzmanlik']}\nMüsaitlik Durumu: {doktor['musaitlik']}"
+                self.red_rectangle.setText(bilgi_mesaji)
+                self.red_rectangle.setVisible(True)
+                return
+
+        QMessageBox.warning(self, "Uyarı", f"{doktor_adi} adlı doktor bulunamadı.")
+
+class AnaEkran(QWidget):
+    def __init__(self, isim, tc):
+        super().__init__()
+        self.setWindowTitle("Ana Ekran")
+        self.resize(600, 400)
+
+        self.isim = isim
+        self.tc = tc
+        self.randevu_gecmisi = []
+
+        self.sekmeler = QTabWidget()
+
+        self.randevu_al_sekmesi = RandevuEkrani(self)
+        self.doktor_sorgula_sekmesi = DoktorSorgulaEkrani(self)
+        self.kisi_sekmesi = QWidget()
+
+        self.sekmeler.addTab(self.randevu_al_sekmesi, "Randevu Al")
+        self.sekmeler.addTab(self.doktor_sorgula_sekmesi, "Doktor Sorgula")
+        self.sekmeler.addTab(self.kisi_sekmesi, "Kişi")
+
+        kisi_layout = QVBoxLayout()
+
+        isim_label = QLabel(f"İsim: {isim}")
+        tc_label = QLabel(f"TC: {tc}")
+
+        self.randevu_gecmisi_textedit = QTextEdit()
+        self.randevu_gecmisi_textedit.setReadOnly(True)
+
+        self.guncelle_randevu_gecmisi()
+
+        kisi_layout.addWidget(isim_label)
+        kisi_layout.addWidget(tc_label)
+        kisi_layout.addWidget(QLabel("Randevu Geçmişi:"))
+        kisi_layout.addWidget(self.randevu_gecmisi_textedit)
+
+        self.kisi_sekmesi.setLayout(kisi_layout)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.sekmeler)
+        self.setLayout(layout)
+
+    def ekle_randevu_gecmisi(self, doktor, saat):
+        self.randevu_gecmisi.append(f"{doktor} - Saat {saat}")
+        self.guncelle_randevu_gecmisi()
+
+    def sil_randevu_gecmisi(self, doktor):
+        self.randevu_gecmisi = [randevu for randevu in self.randevu_gecmisi if doktor not in randevu]
+        self.guncelle_randevu_gecmisi()
+
+    def guncelle_randevu_gecmisi(self):
+        self.randevu_gecmisi_textedit.clear()
+        for randevu in self.randevu_gecmisi:
+            self.randevu_gecmisi_textedit.append(randevu)
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    giris_ekrani = GirisEkrani()
+    giris_ekrani.setStyleSheet("background-color: lightblue;")  # Giriş ekranı arka plan rengini açık mavi yap
+    giris_ekrani.show()
+    sys.exit(app.exec_())
