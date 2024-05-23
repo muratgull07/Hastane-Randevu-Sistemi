@@ -1,3 +1,6 @@
+Bu sistemde ilkin tc ve isim ile giriş yapmak gerekir. ondan sonra 3 farklı sekme karşımıza çıkar. İlkinde müsait bir doktor seçerek randevu alalbiliriz ve sistem bize müsait bir saat verir. İkinci sekmede ise ismini yazdığımız doktorun müsaitlik durumunu ve diğer bilgilerini görebiliriz. Son sekmede ise kendi bilgilerimizi ve randevu geçmişimizi görebiliriz
+
+
 ![Resim 1](https://github.com/muratgull07/Hastane-Randevu-Sistemi/assets/148050387/739c14fa-244f-49b2-bac2-f0edc2cf0c67)
 
 
